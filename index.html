@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Ledgerly is an advanced local-first budget tracker with smart filters, charts, budgets, and persistent browser storage."
+    />
+    <meta name="theme-color" content="#17362f" />
+    <title>Ledgerly - Budget Tracker</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%2317362f%22/><path d=%22M8 9h16v14H8z%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22/><path d=%22M11 13h10M11 18h5%22 stroke=%22%23e6b85c%22 stroke-width=%222%22/></svg>"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#" aria-label="Ledgerly home">
+          <span class="brand-mark"><i data-lucide="wallet-cards"></i></span>
+          <span>Ledgerly</span>
+        </a>
+
+        <nav class="sidebar-nav" aria-label="Primary navigation">
+          <button class="nav-item active" type="button" data-scroll="overview">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Overview</span>
+          </button>
+          <button class="nav-item" type="button" data-scroll="transactions">
+            <i data-lucide="arrow-left-right"></i>
+            <span>Transactions</span>
+          </button>
+          <button class="nav-item" type="button" data-scroll="budget">
+            <i data-lucide="chart-no-axes-column-increasing"></i>
+            <span>Budget</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <div class="storage-card">
+            <i data-lucide="database"></i>
+            <div>
+              <strong>Stored locally</strong>
+              <span>Your data stays in this browser.</span>
+            </div>
+          </div>
+          <button id="data-menu-button" class="nav-item" type="button">
+            <i data-lucide="database-backup"></i>
+            <span>Manage data</span>
+          </button>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Personal finance</p>
+            <h1>Money overview</h1>
+          </div>
+          <div class="topbar-actions">
+            <label class="currency-select">
+              <span class="sr-only">Currency</span>
+              <select id="currency-select" aria-label="Currency">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="THB">THB</option>
+                <option value="MMK">MMK</option>
+                <option value="JPY">JPY</option>
+              </select>
+              <i data-lucide="chevron-down"></i>
+            </label>
+            <button id="open-add-modal" class="button button-primary" type="button">
+              <i data-lucide="plus"></i>
+              <span>Add transaction</span>
+            </button>
+          </div>
+        </header>
+
+        <main>
+          <section id="overview" class="overview-section">
+            <div class="period-bar">
+              <div class="month-control">
+                <button id="previous-month" class="icon-button" type="button" aria-label="Previous month" title="Previous month">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <button id="month-label" class="month-label" type="button" title="Return to current month">
+                  June 2026
+                </button>
+                <button id="next-month" class="icon-button" type="button" aria-label="Next month" title="Next month">
+                  <i data-lucide="chevron-right"></i>
+                </button>
+              </div>
+              <p id="period-summary">A clear view of this month's cash flow.</p>
+            </div>
+
+            <div class="summary-grid">
+              <article class="summary-card balance-card">
+                <div class="summary-card-heading">
+                  <span>Net balance</span>
+                  <span class="summary-icon"><i data-lucide="landmark"></i></span>
+                </div>
+                <strong id="balance-value">--</strong>
+                <p id="balance-note">Income minus expenses</p>
+              </article>
+              <article class="summary-card">
+                <div class="summary-card-heading">
+                  <span>Income</span>
+                  <span class="summary-icon income"><i data-lucide="arrow-down-left"></i></span>
+                </div>
+                <strong id="income-value">--</strong>
+                <p id="income-note">0 transactions</p>
+              </article>
+              <article class="summary-card">
+                <div class="summary-card-heading">
+                  <span>Expenses</span>
+                  <span class="summary-icon expense"><i data-lucide="arrow-up-right"></i></span>
+                </div>
+                <strong id="expense-value">--</strong>
+                <p id="expense-note">0 transactions</p>
+              </article>
+              <article class="summary-card">
+                <div class="summary-card-heading">
+                  <span>Savings rate</span>
+                  <span class="summary-icon savings"><i data-lucide="piggy-bank"></i></span>
+                </div>
+                <strong id="savings-value">--%</strong>
+                <p id="savings-note">Keep building your buffer</p>
+              </article>
+            </div>
+
+            <div class="analytics-grid">
+              <article class="panel cashflow-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Cash flow</p>
+                    <h2>Income vs expenses</h2>
+                  </div>
+                  <span class="chart-legend">
+                    <i class="legend-dot income-dot"></i>Income
+                    <i class="legend-dot expense-dot"></i>Expenses
+                  </span>
+                </div>
+                <div class="chart-wrap chart-wide">
+                  <canvas id="cashflow-chart" aria-label="Six month income and expense chart"></canvas>
+                  <div id="cashflow-empty" class="chart-empty" hidden>
+                    <i data-lucide="chart-column"></i>
+                    <p>Add transactions to build your cash flow chart.</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="panel category-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Spending</p>
+                    <h2>By category</h2>
+                  </div>
+                  <span id="category-total" class="panel-total">--</span>
+                </div>
+                <div class="category-chart-layout">
+                  <div class="chart-wrap chart-donut">
+                    <canvas id="category-chart" aria-label="Expense category chart"></canvas>
+                    <div id="category-empty" class="chart-empty compact" hidden>
+                      <i data-lucide="pie-chart"></i>
+                      <p>No expenses yet.</p>
+                    </div>
+                  </div>
+                  <div id="category-legend" class="category-legend"></div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section id="budget" class="budget-section">
+            <article class="budget-banner">
+              <div class="budget-copy">
+                <p class="eyebrow light">Monthly plan</p>
+                <h2 id="budget-heading">Budget health</h2>
+                <p id="budget-message">Set a monthly budget to track your spending pace.</p>
+                <button id="edit-budget" class="button button-light" type="button">
+                  <i data-lucide="settings-2"></i>
+                  <span>Edit budget</span>
+                </button>
+              </div>
+              <div class="budget-visual">
+                <div class="budget-figures">
+                  <div>
+                    <span>Spent</span>
+                    <strong id="budget-spent">--</strong>
+                  </div>
+                  <div>
+                    <span>Remaining</span>
+                    <strong id="budget-remaining">--</strong>
+                  </div>
+                </div>
+                <div class="budget-progress-track">
+                  <span id="budget-progress"></span>
+                </div>
+                <div class="budget-scale">
+                  <span>0%</span>
+                  <span id="budget-percent">0% used</span>
+                  <span>100%</span>
+                </div>
+              </div>
+            </article>
+
+            <div id="category-budgets" class="category-budget-grid"></div>
+          </section>
+
+          <section id="transactions" class="transactions-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Activity</p>
+                <h2>Transactions</h2>
+              </div>
+              <div class="table-actions">
+                <button id="export-csv" class="button button-secondary" type="button">
+                  <i data-lucide="download"></i>
+                  <span>Export CSV</span>
+                </button>
+                <button id="mobile-add" class="icon-button mobile-add" type="button" aria-label="Add transaction">
+                  <i data-lucide="plus"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="filters">
+              <label class="search-field">
+                <i data-lucide="search"></i>
+                <input id="transaction-search" type="search" placeholder="Search transactions" aria-label="Search transactions" />
+              </label>
+              <div class="segmented-control" aria-label="Date filter">
+                <button type="button" class="active" data-period="month">This month</button>
+                <button type="button" data-period="today">Today</button>
+                <button type="button" data-period="all">All time</button>
+              </div>
+              <label class="filter-select">
+                <span class="sr-only">Transaction type</span>
+                <select id="type-filter" aria-label="Transaction type">
+                  <option value="all">All types</option>
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
+                <i data-lucide="chevron-down"></i>
+              </label>
+              <label class="filter-select">
+                <span class="sr-only">Category</span>
+                <select id="category-filter" aria-label="Category filter">
+                  <option value="all">All categories</option>
+                </select>
+                <i data-lucide="chevron-down"></i>
+              </label>
+            </div>
+
+            <div class="transaction-table-wrap">
+              <table class="transaction-table">
+                <thead>
+                  <tr>
+                    <th>Transaction</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th><span class="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody id="transaction-list"></tbody>
+              </table>
+              <div id="transaction-empty" class="empty-state" hidden>
+                <span class="empty-icon"><i data-lucide="receipt-text"></i></span>
+                <h3>No transactions found</h3>
+                <p>Try another filter or add a new transaction.</p>
+                <button class="button button-primary" type="button" data-open-add>
+                  <i data-lucide="plus"></i>
+                  Add transaction
+                </button>
+              </div>
+            </div>
+            <div class="table-footer">
+              <span id="result-count">0 transactions</span>
+              <span id="filtered-total">Net --</span>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <button id="floating-add" class="floating-add" type="button" aria-label="Add transaction">
+      <i data-lucide="plus"></i>
+    </button>
+
+    <div id="modal-backdrop" class="modal-backdrop" hidden></div>
+
+    <section id="transaction-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="transaction-modal-title" hidden>
+      <form id="transaction-form" class="modal-card">
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">Cash movement</p>
+            <h2 id="transaction-modal-title">Add transaction</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-modal aria-label="Close transaction form">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <input id="transaction-id" type="hidden" />
+
+        <div class="type-toggle" aria-label="Transaction type">
+          <button class="active" type="button" data-form-type="expense">
+            <i data-lucide="arrow-up-right"></i>Expense
+          </button>
+          <button type="button" data-form-type="income">
+            <i data-lucide="arrow-down-left"></i>Income
+          </button>
+        </div>
+
+        <div class="form-grid">
+          <label class="field field-full">
+            <span>Description</span>
+            <input id="description-input" type="text" maxlength="60" placeholder="e.g. Grocery shopping" required />
+          </label>
+          <label class="field">
+            <span>Amount</span>
+            <span class="amount-input">
+              <b id="currency-symbol">$</b>
+              <input id="amount-input" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required />
+            </span>
+          </label>
+          <label class="field">
+            <span>Date</span>
+            <input id="date-input" type="date" required />
+          </label>
+          <label class="field field-full">
+            <span>Category</span>
+            <span class="select-input">
+              <select id="category-input" required></select>
+              <i data-lucide="chevron-down"></i>
+            </span>
+          </label>
+          <label class="field field-full">
+            <span>Note <small>Optional</small></span>
+            <textarea id="note-input" rows="3" maxlength="140" placeholder="Add a useful note"></textarea>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="button button-secondary" type="button" data-close-modal>Cancel</button>
+          <button class="button button-primary" type="submit">
+            <i data-lucide="check"></i>
+            <span>Save transaction</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section id="budget-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="budget-modal-title" hidden>
+      <form id="budget-form" class="modal-card compact-modal">
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">Spending plan</p>
+            <h2 id="budget-modal-title">Edit monthly budget</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-modal aria-label="Close budget form">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <label class="field">
+          <span>Total monthly budget</span>
+          <span class="amount-input">
+            <b id="budget-currency-symbol">$</b>
+            <input id="budget-input" type="number" min="0" step="0.01" inputmode="decimal" required />
+          </span>
+        </label>
+        <p class="form-help">Category limits are allocated from your total budget and update automatically.</p>
+        <div class="modal-actions">
+          <button class="button button-secondary" type="button" data-close-modal>Cancel</button>
+          <button class="button button-primary" type="submit">
+            <i data-lucide="check"></i>
+            <span>Save budget</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section id="data-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="data-modal-title" hidden>
+      <div class="modal-card compact-modal">
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">Local storage</p>
+            <h2 id="data-modal-title">Manage your data</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-modal aria-label="Close data manager">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="data-actions">
+          <button id="export-json" class="data-action" type="button">
+            <span class="data-action-icon"><i data-lucide="file-down"></i></span>
+            <span><strong>Export backup</strong><small>Download all data as JSON</small></span>
+            <i data-lucide="chevron-right"></i>
+          </button>
+          <label class="data-action" for="import-json">
+            <span class="data-action-icon"><i data-lucide="file-up"></i></span>
+            <span><strong>Import backup</strong><small>Restore a Ledgerly JSON file</small></span>
+            <i data-lucide="chevron-right"></i>
+          </label>
+          <input id="import-json" type="file" accept="application/json,.json" hidden />
+          <button id="reset-demo" class="data-action danger" type="button">
+            <span class="data-action-icon"><i data-lucide="rotate-ccw"></i></span>
+            <span><strong>Reset demo data</strong><small>Replace current data with a fresh sample</small></span>
+            <i data-lucide="chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite">
+      <i data-lucide="circle-check"></i>
+      <span>Changes saved</span>
+    </div>
+
+    <div id="loading-screen" class="loading-screen">
+      <span class="brand-mark"><i data-lucide="wallet-cards"></i></span>
+      <span class="loading-line"></span>
+      <p>Preparing your ledger</p>
+    </div>
+  </body>
+</html>
